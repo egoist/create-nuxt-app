@@ -132,13 +132,38 @@ module.exports = {
     })
 
     const generator = this
+    const hasTypeScript = this.answers.language.includes('ts')
+    const hasJest = this.answers.test.includes('jest')
+    const hasAxios = this.answers.features.includes('axios')
     actions.push({
       type: 'modify',
       files: 'package.json',
       handler (data) {
-        return { ...data, ...pkg.load(generator) }
+        const result = { ...data, ...pkg.load(generator) }
+        if (hasTypeScript && hasJest) {
+          result.devDependencies['@types/jest'] = '^26.0.15'
+        }
+        return result
       }
     })
+
+    if (hasTypeScript) {
+      actions.push({
+        type: 'modify',
+        files: 'tsconfig.json',
+        handler (data) {
+          const { compilerOptions } = data
+          const { types } = compilerOptions
+          if (hasJest) {
+            types.push('@types/jest')
+          }
+          if (hasAxios) {
+            types.push('@nuxtjs/axios')
+          }
+          return { ...data, compilerOptions: { ...compilerOptions, types } }
+        }
+      })
+    }
 
     // For compiling package.json
     actions.push({
